@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Detail</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <main class="container">
+    <a class="btn back" href="{{ url_for('index') }}">← Back</a>
+
+    <h1>{{ video['name'] or video['original_filename'] }}</h1>
+    <p class="muted">Uploaded: {{ taken_display }}</p>
+    {% if video['caption'] %}
+      <p class="caption">{{ video['caption'] }}</p>
+    {% endif %}
+
+    <div class="actions" style="gap:8px; margin: 8px 0 16px;">
+      <a class="btn" href="{{ url_for('edit_video', video_id=video['id']) }}">Edit</a>
+      <form action="{{ url_for('delete_video', video_id=video['id']) }}" method="post" style="display:inline" onsubmit="return confirm('Delete this video? This cannot be undone.');">
+        <button type="submit" class="btn" style="background:#c62828">Delete</button>
+      </form>
+    </div>
+
+    <div class="player">
+      <video controls preload="metadata">
+        <source src="{{ url_for('stream_video', video_id=video['id']) }}" type="{{ video['mime_type'] or 'video/mp4' }}" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <section class="meta">
+      <h2>Info</h2>
+      <ul class="kv">
+        <li><span>Original file:</span><span>{{ video['original_filename'] }}</span></li>
+        <li><span>Size:</span><span>{{ '%.2f' % (video['size_bytes'] / (1024*1024)) }} MB</span></li>
+        <li><span>Hash:</span><span><code>{{ video['file_hash'] }}</code></span></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

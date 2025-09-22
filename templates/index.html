@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bamou - line</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <main class="container">
+    <section class="upload">
+      <h2>Upload</h2>
+      <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" class="upload-form">
+        <div class="field">
+          <label for="video">Video</label>
+          <input type="file" id="video" name="video" accept="video/*" required />
+        </div>
+        <div class="field">
+          <label for="name">Name (optional)</label>
+          <input type="text" id="name" name="name" placeholder="Short name" />
+        </div>
+        <div class="field">
+          <label for="caption">Caption</label>
+          <input type="text" id="caption" name="caption" placeholder="What is this video about?" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="date">Date (DD.MM.YY)</label>
+            <input type="text" id="date" name="date" placeholder="e.g. 19.09.25" required />
+          </div>
+          <div class="field">
+            <label for="time">Time (24h)</label>
+            <input type="text" id="time" name="time" value="19:00" required />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit">Upload</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="month-nav">
+      <div class="nav">
+        <a class="btn" href="{{ url_for('index', year=prev_year, month=prev_month) }}">◀</a>
+        <div class="title">{{ (year|string) ~ '-' ~ ('%02d' % month) }}</div>
+        <a class="btn" href="{{ url_for('index', year=next_year, month=next_month) }}">▶</a>
+      </div>
+    </section>
+
+    <section class="heatmap-section">
+      <div class="heatmap-list">
+        {% set letters = ['M','T','W','T','F','S','S'] %}
+        <ul class="weekdays-row">
+          {% for d in all_days %}
+            <li class="weekday" title="{{ d.strftime('%A') }}">{{ letters[d.weekday()] }}</li>
+          {% endfor %}
+        </ul>
+        <ul class="days-row">
+          {% for d in all_days %}
+            {% set day_iso = d.isoformat() %}
+            {% set c = counts.get(day_iso, 0) %}
+            {% set level = 0 %}
+            {% if max_count > 0 %}
+              {% set ratio = c / max_count %}
+              {% if c == 0 %}
+                {% set level = 0 %}
+              {% elif ratio < 0.25 %}
+                {% set level = 1 %}
+              {% elif ratio < 0.5 %}
+                {% set level = 2 %}
+              {% elif ratio < 0.75 %}
+                {% set level = 3 %}
+              {% else %}
+                {% set level = 4 %}
+              {% endif %}
+            {% endif %}
+            <li class="cell level-{{ level }}{% if d == today %} today{% endif %}" title="{{ d.strftime('%d.%m.%Y') }}: {{ c }} video(s)">
+              <span class="daynum">{{ d.day }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="list">
+      <h2>
+        Videos in {{ (year|string) ~ '-' ~ ('%02d' % month) }}
+      </h2>
+      {% if videos %}
+        <ul class="video-list">
+          {% for v in videos %}
+            <li class="video-item">
+              <div class="meta">
+                <a href="{{ url_for('video_detail', video_id=v['id']) }}" class="name">
+                  {{ v['name'] or v['original_filename'] }}
+                </a>
+                <span class="dot">•</span>
+                <span class="date">
+                  {%- set disp = v['taken_at'] -%}
+                  {%- set dt = disp -%}
+                  {{ dt[:10].split('-')[2] }}.{{ dt[:10].split('-')[1] }}.{{ dt[:10].split('-')[0] }} {{ dt[11:16] }}
+                </span>
+                {% set succ = upload_success_by_video.get(v['id'], 0) %}
+                {% if succ and succ > 0 %}
+                  <span class="success-count small">✓ {{ succ }}</span>
+                {% endif %}
+              </div>
+              {% if v['caption'] %}
+                <div class="caption">{{ v['caption'] }}</div>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No videos this month yet.</p>
+      {% endif %}
+    </section>
+  </main>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+</body>
+</html>

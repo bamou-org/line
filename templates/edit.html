@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Video</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <main class="container">
+    <a class="btn back" href="{{ url_for('video_detail', video_id=video['id']) }}">← Back</a>
+    <h1>Edit Video</h1>
+
+    <form action="{{ url_for('edit_video', video_id=video['id']) }}" method="post" class="upload-form" style="max-width: 560px;">
+      <div class="field">
+        <label for="name">Name (optional)</label>
+        <input type="text" id="name" name="name" value="{{ video['name'] or '' }}" placeholder="Short name" />
+      </div>
+      <div class="field">
+        <label for="caption">Caption</label>
+        <input type="text" id="caption" name="caption" value="{{ video['caption'] or '' }}" placeholder="What is this video about?" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="date">Date (DD.MM.YY)</label>
+          <input type="text" id="date" name="date" value="{{ pre_date }}" required />
+        </div>
+        <div class="field">
+          <label for="time">Time (24h)</label>
+          <input type="text" id="time" name="time" value="{{ pre_time }}" required />
+        </div>
+      </div>
+      <div class="actions" style="gap:8px;">
+        <button type="submit">Save</button>
+        <a class="btn" href="{{ url_for('video_detail', video_id=video['id']) }}" style="background:#777;">Cancel</a>
+      </div>
+    </form>
+  </main>
+</body>
+</html>
