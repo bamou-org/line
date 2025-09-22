@@ -6,7 +6,7 @@ Buffer alternative – scheduled upload of short-form content to various platfor
 
 ### Supportet platforms
 - Instagram
-- FaceBook
+- TikTok
 
 ### Project Structure
 - `app.py` – Flask application and SQLite models
