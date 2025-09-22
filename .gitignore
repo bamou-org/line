@@ -8,3 +8,5 @@ uploads/
 app.db
 *.sqlite3
 .env
+
+TikTok_cookies.txt

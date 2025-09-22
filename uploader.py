@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List
 from dotenv import load_dotenv
 from instagrapi import Client
+from tiktok_uploader.upload import upload_video
 
 # -----------------------
 # Paths and environment
@@ -16,9 +17,9 @@ load_dotenv(BASE_DIR / ".env")
 DB_PATH = BASE_DIR / "videos.db"
 UPLOAD_DIR = BASE_DIR / "uploads"
 
-# Map of service -> env var that enables it
+# Map of service -> env var that enables it (see special-case in enabled_services for TikTok)
 SERVICE_ENV_MAP: Dict[str, str] = {
-    "tiktok": "TIKTOK_API_KEY",
+    "tiktok": "TIKTOK_COOKIES_FILE",
     "instagram": "INSTAGRAM_USERNAME",
 }
 
@@ -53,6 +54,7 @@ def ensure_schema(db: sqlite3.Connection) -> None:
     db.execute("CREATE INDEX IF NOT EXISTS idx_video_uploads_status ON video_uploads(status);")
     db.commit()
 
+
 # -----------------------
 # Service helpers
 # -----------------------
@@ -65,11 +67,15 @@ def enabled_services() -> List[str]:
     return services
 
 
-def has_success(db: sqlite3.Connection, video_id: int, service: str) -> bool:
+def has_attempt(db: sqlite3.Connection, video_id: int, service: str) -> bool:
+    """
+    Returns True if there has been any prior attempt (success or failure)
+    to upload this video to the given service.
+    """
     cur = db.execute(
         """
         SELECT 1 FROM video_uploads
-        WHERE video_id = ? AND service = ? AND status = 'success'
+        WHERE video_id = ? AND service = ?
         LIMIT 1
         """,
         (video_id, service),
@@ -108,6 +114,28 @@ def mark_result(
 
 def upload_to_service(service: str, video_path: Path, caption: str | None) -> None:
     if service == "tiktok":
+        print("[uploader] uploading to tiktok")
+        cookies_file = os.environ.get("TIKTOK_COOKIES_FILE")
+        description = caption or ""
+
+        # Ensure the path we pass has a valid video extension
+        path_for_upload = video_path
+        if not path_for_upload.suffix:
+            mp4_path = path_for_upload.with_suffix(".mp4")
+            if not mp4_path.exists():
+                try:
+                    os.link(path_for_upload, mp4_path)
+                except OSError:
+                    # Fallback: simple copy without extra imports
+                    mp4_path.write_bytes(path_for_upload.read_bytes())
+            path_for_upload = mp4_path
+
+        upload_video(
+            str(path_for_upload),
+            description=description,
+            cookies=cookies_file,
+            headless=True,
+        )
         return None
     elif service == "instagram":
         print("[uploader] uploading to instagram")
@@ -165,7 +193,9 @@ def main_loop() -> None:
             cur = db.execute(
                 """
                 SELECT * FROM videos
-                WHERE taken_at <= strftime('%Y-%m-%dT%H:%M', 'now','localtime')
+                WHERE taken_at BETWEEN
+                    strftime('%Y-%m-%dT%H:%M', 'now', '-24 hours', 'localtime') AND
+                    strftime('%Y-%m-%dT%H:%M', 'now', 'localtime')
                 ORDER BY taken_at ASC
                 """
             )
@@ -180,14 +210,16 @@ def main_loop() -> None:
                 file_hash = row["file_hash"]
                 video_path = UPLOAD_DIR / file_hash
                 if not video_path.exists():
-                    # Skip and mark as failed for all services to avoid repeated attempts
+                    # Mark once per service and skip repeat attempts
                     for svc in svcs:
-                        if not has_success(db, video_id, svc):
+                        if not has_attempt(db, video_id, svc):
                             mark_result(db, video_id, svc, ok=False, error="file missing on disk")
                     continue
 
                 for svc in svcs:
-                    if has_success(db, video_id, svc):
+                    # If we've already attempted this service for this video
+                    # (either success or failure), do not try again.
+                    if has_attempt(db, video_id, svc):
                         continue
                     try:
                         upload_to_service(svc, video_path, caption)
