@@ -47,9 +47,6 @@ TIKTOK_COOKIES_FILE=TikTok_cookies.txt
 # If both are set, Instagram uploads are enabled
 INSTAGRAM_USERNAME=your_instagram_username
 INSTAGRAM_PASSWORD=your_instagram_password
-
-# Optional: polling interval for uploader (seconds, default 30)
-UPLOADER_POLL_SECONDS=30
 ```
 
 `APP_USERNAME` and `APP_PASSWORD` are required for logging into the web UI. The service settings are optional; add only the services you want to enable.
