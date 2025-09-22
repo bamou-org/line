@@ -1,16 +1,12 @@
-# line
+<div align="center">
+  <img width="400" height="400" alt="bamou - line" src="https://github.com/user-attachments/assets/f900b6a5-c645-474f-9e67-cb6442ccf633" />
+</div>
+<hr/>
 Buffer alternative – scheduled upload of short-form content to various platforms
 
-## Simple Flask Video Uploader
-
-This repository now includes a small Flask app to upload videos with optional name, caption, date, and time. Uploaded videos are stored on disk using a SHA-256 content hash as the filename, and their metadata is stored in a local SQLite database.
-
-### Features
-- Optional display name (defaults to the original filename without extension if not provided)
-- Caption field
-- Date and time fields (combined into a `captured_at` datetime)
-- Deduplicated storage by content hash (re-uploads of the same content will update metadata rather than storing a second copy)
-- Simple listing page and detail page with an HTML5 video player
+### Supportet platforms
+- Instagram
+- FaceBook
 
 ### Project Structure
 - `app.py` – Flask application and SQLite models
